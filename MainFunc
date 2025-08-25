@@ -1,0 +1,62 @@
+ DATA(data) = sy-datum.
+    DATA: wa_largados TYPE zlargados.
+    DATA: gt_dados_alv TYPE TABLE OF zlargados.
+    DATA: desc            TYPE name1,
+          nome            TYPE char40,
+          temp_centro     TYPE char40,
+          temp_percen     TYPE char10,
+          qtd_parcial_cam TYPE int4,
+          pende_parcial   TYPE int4.
+
+    SUBMIT zprograma WITH s_dt-low = data
+                     WITH p_odata  = abap_true
+                     WITH c_mpc    = 'X' AND RETURN.
+    IMPORT t_largados TO gt_dados_alv FROM MEMORY ID 'DADOS_ALV'.
+    IF gt_dados_alv IS NOT INITIAL.
+      SORT gt_dados_alv BY werks.
+      "Coleta GERAL dos dados
+      LOOP AT gt_dados_alv INTO DATA(wa_dados).
+        qtd_parcial_cam = qtd_parcial_cam + wa_dados-qtd_cam.
+        pende_parcial   =  pende_parcial + wa_dados-pendentes.
+        CLEAR: wa_dados.
+      ENDLOOP.
+      wa_largados-werks     = 'GERAL'.
+      wa_largados-qtd_cam   = qtd_parcial_cam.
+      wa_largados-pendentes = pende_parcial .
+      temp_percen(5)        = ( wa_largados-pendentes * 100 ) / wa_largados-qtd_cam.
+      wa_largados-porcent_e = 100 - temp_percen.
+      wa_largados-porcent_p   = temp_percen.
+      CLEAR: temp_percen  .
+      INSERT wa_largados INTO et_entityset INDEX 1.
+      CLEAR: wa_largados , wa_dados.
+      SORT gt_dados_alv BY werks.
+      "Coleta de dados por CENTRO
+      LOOP AT gt_dados_alv INTO wa_dados.
+        IF temp_centro IS INITIAL OR temp_centro <> wa_dados-werks.
+          IF temp_centro IS NOT INITIAL.
+            APPEND wa_largados TO et_entityset.
+          ENDIF.
+          CLEAR wa_largados.
+          SELECT SINGLE name1
+           FROM tnomecentros
+           INTO desc
+           WHERE werks = wa_dados-werks.
+          CONCATENATE wa_dados-werks '-' desc INTO nome.
+          wa_largados-werks = nome.
+          temp_centro = wa_dados-werks.
+          CLEAR desc.
+        ENDIF.
+        wa_largados-qtd_cam   = wa_dados-qtd_cam.
+        wa_largados-pendentes = wa_dados-pendentes .
+        temp_percen(5) = ( wa_largados-pendentes * 100 ) / wa_dados-qtd_cam.
+        wa_largados-porcent_e = 100 - temp_percen.
+        wa_largados-porcent_p   = temp_percen.
+
+      ENDLOOP.
+      IF temp_centro IS NOT INITIAL.
+        APPEND wa_largados TO et_entityset.
+      ENDIF.
+    ELSE.
+      wa_largados-message = 'Dados não encontrados'.
+      APPEND wa_largados TO et_entityset.
+    ENDIF.
