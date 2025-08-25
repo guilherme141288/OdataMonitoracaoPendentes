@@ -1,1 +1,1 @@
-Programa criado para monitoração de caminhoes programados e pendentes de partida, dados colhidos atraves do programa ja existente e trazendo o TOTAL de veiculos programados/pendentes e o valor individual para cada CENTRO
+Programa criado para monitoração de caminhoes programados e pendentes de partida, dados colhidos atraves do programa ja existente e trazendo o TOTAL de veiculos programados/pendentes e o valor individual para cada CENTRO.
